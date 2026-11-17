@@ -173,6 +173,20 @@ test('original start is unavailable for queued, inconsistent, or tied-conflictin
   assert.ok(result.runs[0].reasonCodes.includes('conflicting_attempt_observations'));
 });
 
+test('contradictory non-null start times within one attempt remain unknown across fetch times', () => {
+  const input = fixture({ runs: [run('r', 65, { startedAtMs: at(66), observedAtMs: at(80) }),
+    run('r', 65, { startedAtMs: at(100), observedAtMs: at(110) })] });
+  const result = reconcile(input);
+  assert.equal(result.opportunities[0].originalStartLagMs, null);
+  assert.ok(result.runs[0].reasonCodes.includes('conflicting_attempt_observations'));
+  assert.equal(result.opportunities[0].classification, 'matched_on_time');
+});
+
+test('a null start can become known in a later observation of the same attempt', () => {
+  const result = reconcile(fixture({ runs: [run('r', 65, { startedAtMs: null, observedAtMs: at(65) }), run('r', 65)] }));
+  assert.equal(result.opportunities[0].originalStartLagMs, 360_000);
+});
+
 test('post-cutoff start is a later observation; earlier attempt fetch does not erase a rerun', () => {
   const result = reconcile(fixture({ runs: [
     run('r', 65, { startedAtMs: at(410), observedAtMs: at(500), conclusion: 'failure' }),

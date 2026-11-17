@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "definitionSha256": "d6313a53bc69870129ed673fb960a6e464f47a5e3f1ae74e03c554e124f01796",
+  "assertions": {
+    "fromMs": 1767195600000,
+    "throughMs": 1767285600000,
+    "historyAvailable": true,
+    "definitionStable": true,
+    "workflowEligible": true,
+    "note": "Synthetic assertions for automated tests; not real history."
+  }
+}

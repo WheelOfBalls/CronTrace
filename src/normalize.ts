@@ -14,7 +14,9 @@ function latestObservation(rows: RunObservation[]): { row: RunObservation | null
   if (rows.length === 0) return { row: null, conflict: false };
   const newest = rows.reduce((a, b) => a.observedAtMs > b.observedAtMs ? a : b);
   const tied = rows.filter(r => r.observedAtMs === newest.observedAtMs);
-  const conflict = tied.some(r => r.startedAtMs !== newest.startedAtMs || r.conclusion !== newest.conclusion);
+  const knownStarts = new Set(rows.flatMap(r => r.startedAtMs === null ? [] : [r.startedAtMs]));
+  const conflict = knownStarts.size > 1
+    || tied.some(r => r.startedAtMs !== newest.startedAtMs || r.conclusion !== newest.conclusion);
   return { row: conflict ? null : newest, conflict };
 }
 
