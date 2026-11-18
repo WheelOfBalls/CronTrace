@@ -1,0 +1,53 @@
+{
+  "name": "crontrace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint .",
+    "test:e2e": "npm run build && node --test test/e2e/*.test.mjs",
+    "verify": "npm run check && npm run test:e2e",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.19.2",
+    "eslint": "10.15.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.73.0"
+  },
+  "dependencies": {
+    "cron-parser": "5.10.6",
+    "yaml": "2.9.1"
+  },
+  "description": "Evidence-first historical audits of GitHub Actions schedules",
+  "bin": {
+    "crontrace": "dist/bin.js"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "examples/",
+    "docs/",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WheelOfBalls/CronTrace.git"
+  },
+  "bugs": {
+    "url": "https://github.com/WheelOfBalls/CronTrace/issues"
+  }
+}

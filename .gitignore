@@ -9,3 +9,8 @@ dist/
 coverage/
 *.log
 .DS_Store
+
+*.tgz
+/evidence.json
+/policy.json
+/report.json

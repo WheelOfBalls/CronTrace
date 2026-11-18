@@ -1,0 +1,39 @@
+CronTrace 0.1.0 — historical schedule audit
+Repository: example/crontrace-synthetic
+Workflow: .github/workflows/synthetic.yml (ID 42)
+Target interval: [2026-01-01T00:00:00.000Z, 2026-01-01T03:00:00.000Z)
+Creation cutoff: 2026-01-01T06:40:00.000Z
+Schedule: 0 * * * * (UTC)
+Late tolerance: 10.00 min; attribution horizon: 50.00 min
+Evidence: e2a556561afe7b3cb54d9ff37f653528ce009a77ba711dba86e52a272a4918d8
+Historical policy: 1877c4ebded096f75b1cb5c2f43f56c2f0ad782a8e98d6bc3da2001e50a2329c
+Assertions: Synthetic assertions for automated tests; not real history.
+
+Coverage and outcomes
+API traversal: 16800001/16800001 milliseconds of requested context (not retention completeness)
+Target opportunities: 3; recorded scheduled runs including context: 2
+Within tolerance: 1; late: 1; potential gaps: 1
+Ambiguous: 0; pending: 0; unknown: 0; excluded: 0
+Runs with rerun evidence: 0
+Latest execution conclusions (including context): failure=1, success=1
+Conditional creation lag (n=2): median 17.50 min, p95 30.00 min, max 30.00 min
+
+Opportunity evidence
+2026-01-01T00:00:00.000Z  matched_on_time  creation lag=5.00 min  original start lag=6.00 min
+  Reasons: isolated_candidate
+  Candidate: https://github.com/example/crontrace-synthetic/actions/runs/100
+2026-01-01T01:00:00.000Z  matched_late  creation lag=30.00 min  original start lag=31.00 min
+  Reasons: isolated_candidate
+  Candidate: https://github.com/example/crontrace-synthetic/actions/runs/101
+2026-01-01T02:00:00.000Z  potential gap (no_observed_run)  creation lag=unknown  original start lag=unknown
+  Reasons: no_record_in_horizon
+
+Warnings and assumptions
+- Matching is conditional on the supplied history assertions and attribution horizon; a gap is not proof of a dropped event.
+- API traversal coverage does not establish historical record availability; retention and deletion may remove runs.
+- Run conclusions are observations during collection, not an atomic snapshot at the creation cutoff.
+- Isolated matches remain conditional associations; none is a verified original scheduler event ID.
+Method: https://github.com/WheelOfBalls/CronTrace/blob/main/docs/METHODOLOGY.md
+GitHub: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule
+
+Result: analysis completed under stated assumptions; see selected failure threshold.
