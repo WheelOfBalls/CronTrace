@@ -38,10 +38,10 @@
     "LICENSE",
     "CHANGELOG.md",
     "SECURITY.md",
-    "docs/METHODOLOGY.md",
-    "docs/CLI.md",
-    "docs/TROUBLESHOOTING.md",
-    "examples/"
+    "examples/",
+    "docs/",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md"
   ],
   "repository": {
     "type": "git",

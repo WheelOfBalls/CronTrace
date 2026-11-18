@@ -40,11 +40,16 @@ Named zones/DST, multiple cron entries, historical epochs and Enterprise hosts a
 
 The technical hypothesis survived **for conservative conditional analysis and reproducible evidence**, not exact missed-event detection. Product-market usefulness remains unproven. Scope expansion is optional and gated by actual need.
 
+## Pull request and remote verification
+
+[PR #2](https://github.com/WheelOfBalls/CronTrace/pull/2) is open against main on `feat/crontrace-cli`; it is not merged. The planning commit remains in its ancestry. [GitHub CI run 44317959563](https://github.com/WheelOfBalls/CronTrace/actions/runs/44317959563) passed on implementation commit f809b0b: installation, full verification, runtime dependency audit and package dry-run. A subsequent documentation/package-file-list commit records these results and includes the linked guides in the tarball; its installed-package E2E suite also passed locally. Check the PR checks for the latest documentation commit's remote result.
+
 ## Remaining actions and precise resume point
 
-1. Commit/push the reviewed changes to `feat/crontrace-cli` and open the final PR against main, preserving planning history.
-2. Inspect the remote CI result, fix material failures if any, and record the PR/result here. Do not claim CI ran until observed.
-3. Owner review and explicit merge/publication decisions remain. Recheck D15 before release and follow [RELEASE.md](RELEASE.md).
-4. After review, prioritize one authorized unfamiliar-developer incident walkthrough; no outreach has been sent.
+Engineering implementation and release preparation are complete for the supported subset. No package, tag, service or GitHub Release was published. No background work continues after handoff.
 
-Resume at step 1 if the session ends before PR creation. All implementation and local verification are preserved in the worktree `/workspace/work/crontrace-m1`; logs/live evidence are outside the repo under `/workspace/work/`. No package, tag, service or release was published.
+1. **Next action: owner review of PR #2**, including the development-only advisory and evidence limitations. Inspect its latest CI checks before any merge.
+2. Recheck the unpatched D15 advisory before release and follow [RELEASE.md](RELEASE.md). Merge and publication require explicit owner approval; `private: true` remains intentional.
+3. Optional next development is one authorized unfamiliar-developer incident walkthrough, then prioritize evidence-backed issues D09–D15. No outreach has been sent.
+
+Future sessions should start from the PR branch and this record, not reimplement completed milestones. The local worktree is `/workspace/work/crontrace-m1`; verification logs/live smoke evidence are outside the repository under `/workspace/work/`. Private access, additional platforms and market validation remain unverified rather than silently considered complete.
