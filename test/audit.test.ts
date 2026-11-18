@@ -78,6 +78,20 @@ test('text rendering rejects expansion beyond the report size ceiling', () => {
   assert.throws(() => formatReport(report), /10 MiB/);
 });
 
+test('narrower reanalysis excludes outer collection context without hiding identity conflicts', () => {
+  const { bundle, policy } = productFixture();
+  const outer = { ...bundle.runs[0], runId: '99', createdAtMs: at(-40), startedAtMs: at(-39) };
+  const changed = sealBundle({ ...bundle, runs: [bundle.runs[0], outer] });
+  const report = auditEvidence(changed, policy, { maxLatenessMs: 10 * minute, lateAfterMs: 5 * minute });
+  assert.deepEqual(report.analysis.opportunities.map(r => r.classification), ['matched_on_time', 'no_observed_run', 'no_observed_run']);
+  assert.equal(report.summary.excludedContextObservations, 1);
+  assert.equal(report.summary.recordedScheduledRunsInContext, 1);
+  assert.deepEqual(report.analysis.unmatchedRunIds, []);
+  const conflict = sealBundle({ ...changed, runs: [...changed.runs, { ...outer, runId: bundle.runs[0].runId }] });
+  const unknown = auditEvidence(conflict, policy, { maxLatenessMs: 10 * minute, lateAfterMs: 5 * minute });
+  assert.ok(unknown.analysis.opportunities.every(r => r.classification === 'unknown'));
+});
+
 test('current disabled metadata is a warning, not an invented historical exclusion', () => {
   const { bundle, policy } = productFixture();
   const changed = sealBundle({ ...bundle, workflow: { ...bundle.workflow, state: 'disabled_inactivity' } });

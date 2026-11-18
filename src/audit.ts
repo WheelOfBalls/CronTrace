@@ -21,7 +21,8 @@ export interface AuditReport {
     counts: Record<string, number>;
     matchedSampleSize: number;
     creationLag: { medianMs: number; p95Ms: number; maxMs: number } | null;
-    recordedScheduledRunsInEvidence: number;
+    recordedScheduledRunsInContext: number;
+    excludedContextObservations: number;
     runsWithReruns: number;
     executionConclusions: Record<string, number>;
     coverage: { apiTraversalMs: number; requestedContextMs: number };
@@ -56,6 +57,12 @@ export function auditEvidence(rawBundle: EvidenceBundle, rawPolicy: AuditPolicy 
   const schedule = readSchedule(bundle.workflow.definitionText);
   const from = bundle.interval.fromMs - 2 * maxLatenessMs;
   const through = Math.min(bundle.observedUntilMs, bundle.interval.toMs + maxLatenessMs);
+  const contextFrom = bundle.interval.fromMs - maxLatenessMs;
+  // Keep whole identities when any observation is in scope, so conflicting
+  // creation times cannot disappear through filtering before normalization.
+  const selectedIds = new Set(bundle.runs.filter(r => r.createdAtMs >= contextFrom && r.createdAtMs <= through).map(r => r.runId));
+  const runs = bundle.runs.filter(r => selectedIds.has(r.runId));
+  const excludedContextObservations = bundle.runs.length - runs.length;
   const opportunities = schedule.supported
     ? enumerateOpportunities(schedule, bundle.workflow.definitionSha256, from, through) : [];
   const evidence: Evidence[] = bundle.collection.coverage.map(e => ({ ...e, kind: 'api', basis: 'observed' }));
@@ -68,7 +75,7 @@ export function auditEvidence(rawBundle: EvidenceBundle, rawPolicy: AuditPolicy 
   }
   const analysis = reconcile({ repositoryId: bundle.repository.id, workflowId: bundle.workflow.id,
     ...bundle.interval, observedUntilMs: bundle.observedUntilMs, lateAfterMs, maxLatenessMs,
-    semanticsSupported: schedule.supported, opportunities, runs: bundle.runs, evidence });
+    semanticsSupported: schedule.supported, opportunities, runs, evidence });
   const counts: Record<string, number> = Object.fromEntries([
     'matched_on_time', 'matched_late', 'no_observed_run', 'ambiguous', 'pending', 'unknown', 'excluded',
   ].map(key => [key, 0]));
@@ -90,7 +97,6 @@ export function auditEvidence(rawBundle: EvidenceBundle, rawPolicy: AuditPolicy 
     conclusions.set(key, (conclusions.get(key) ?? 0) + 1);
   }
   const executionConclusions = Object.fromEntries([...conclusions].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0));
-  const contextFrom = bundle.interval.fromMs - maxLatenessMs;
   const apiTraversalMs = coveredMilliseconds(evidence, contextFrom, through);
   const requestedContextMs = through - contextFrom + 1;
   const assertionsCoverContext = policy !== null && policy.assertions.historyAvailable
@@ -107,13 +113,14 @@ export function auditEvidence(rawBundle: EvidenceBundle, rawPolicy: AuditPolicy 
   if (bundle.workflow.state !== 'active') warnings.push(`Current workflow state is ${bundle.workflow.state}; historical enablement is not reconstructed.`);
   if (!schedule.supported) warnings.push(...schedule.reasonCodes);
   if (suspect) warnings.push('Unexplained runs suppress aggregate lag summaries and absence judgments.');
+  if (excludedContextObservations) warnings.push(`${excludedContextObservations} observations lie outside the selected attribution context and are excluded from this analysis; the original bundle is unchanged.`);
   if (n && (counts.unknown || counts.ambiguous || counts.pending)) warnings.push('Lag statistics describe only isolated matched records; they are not overall scheduler reliability.');
   const { definitionText: _definitionText, ...workflow } = bundle.workflow;
   return { schemaVersion: 1, toolVersion: VERSION, bundleDigest: bundle.digest,
     policyDigest: policy ? sha256(canonicalJson(policy)) : null,
     repository: bundle.repository, workflow, schedule, policy, analysis,
     summary: { targetOpportunities: analysis.opportunities.length, counts, matchedSampleSize: n,
-      creationLag, recordedScheduledRunsInEvidence: analysis.runs.length,
+      creationLag, recordedScheduledRunsInContext: analysis.runs.length, excludedContextObservations,
       runsWithReruns: analysis.runs.filter(r => r.attempts.some(a => a > 1)).length, executionConclusions,
       coverage: { apiTraversalMs, requestedContextMs } },
     incomplete: !schedule.supported || !assertionsCoverContext || counts.unknown > 0 || suspect || apiTraversalMs < requestedContextMs,

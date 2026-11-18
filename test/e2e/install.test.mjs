@@ -5,6 +5,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import process from 'node:process';
 
 let dir, binary;
 const root = resolve(import.meta.dirname, '../..');
@@ -64,4 +65,12 @@ test('installed policy and report output commands are exclusive and usable', asy
   assert.equal(JSON.parse(await readFile(output, 'utf8')).schemaVersion, 1);
   const overwrite = run(['audit', evidence, '--out', output]);
   assert.equal(overwrite.status, 2);
+});
+
+test('a broken output pipe cannot turn incomplete or failed audits into exit zero', async () => {
+  const closed = join(dir, 'closed-output.mjs');
+  await writeFile(closed, "process.stdout.write = () => { process.nextTick(() => process.stdout.emit('error', Object.assign(new Error('closed'), {code:'EPIPE'}))); return true; };\n");
+  const failed = run(['audit', evidence], { NODE_OPTIONS: env.NODE_OPTIONS + ' --import=' + pathToFileURL(closed).href });
+  assert.equal(failed.status, 2);
+  assert.match(failed.stderr, /output pipe closed/);
 });

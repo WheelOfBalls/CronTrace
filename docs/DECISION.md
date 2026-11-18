@@ -1,28 +1,18 @@
-# Decision memo
+# Decision memo — 2026-11-17
 
-**2026-11-16 — Conditional GO for a bounded offline prototype; NO-GO for committing to a full separate monitoring product today.**
+**Conditional GO for a narrow initial CLI release candidate; no claim of validated product demand or exact missed-event detection.** The owner authorized completing the functional product after the initial M1 recommendation. The research and earlier decision remain in Git history.
 
-The scheduling problem is real. The standalone-product opportunity is not yet validated. The generic pitch—discover late/missed Actions schedules, calculate drift, and avoid editing every workflow—is substantially covered by Cronkeeper, cron-drift, Cronwake, Healthchecks integration patterns, and editor tooling. Schedule Lens already offers a strong local static audit experience. Cron Calendar Pro explicitly advertises historical run summaries.
+The technical hypothesis survived adversarial validation in its limited form: saved records plus explicit assumptions can support deterministic, inspectable associations without forcing a nearest-slot answer. The tool can retrieve evidence, replay offline, distinguish ambiguous/unknown/pending cases and report conditional timing/gaps. Tests cannot establish true scheduling intent from GitHub's API. Dense schedules and uncertain history can produce mostly unknowns; that is a serious product limitation, not merely a future optimization.
 
-The remaining hypothesis is narrower: maintainers may value a headless, locally replayable evidence report that preserves assumptions and uncertainty well enough to support incident investigation. That merits one small experiment, not a broad launch. Sources and qualifications are in [RESEARCH.md](RESEARCH.md).
+| Criterion | Current judgment |
+| --- | --- |
+| Unmet demand | Real scheduling pain is sourced; demand for this precise local-evidence workflow is still unproven. No interviews or user feedback fabricated. |
+| Differentiation | Modest but concrete: checksummed local bundles, explicit history policy, conservative attribution and deterministic offline replay. Competitors and scripts overlap substantially. |
+| Technical feasibility | Demonstrated for the supported UTC subset and bounded collection; exact dropped-event identification and historical reconstruction remain unsupported. |
+| Maintenance | Manageable with a narrow Node/cron/API support surface; compatibility and false-certainty bugs need ongoing attention. No hosted operations burden. |
+| Adoption | Plausible for maintainers investigating incidents; external walkthroughs and repeat usefulness are still required before expansion. |
+| Student suitability | A focused CLI can be maintained alongside school if scope stays frozen and support has no SLA. A monitoring service or broad scheduling framework would be a poor fit. |
 
-| Criterion | Judgment | Implication |
-| --- | --- | --- |
-| Unmet demand | Scheduling pain and requests for read-only diagnostics are documented; demand for this exact workflow is unproven. | Interview maintainers about concrete recent incidents and test an actual report. |
-| Differentiation | Modest. Evidence replay and explicit uncertainty are a plausible combination, not a defensible technical moat. | Do not pitch another alerting tool or claim unique historical auditing. |
-| Technical feasibility | Good for retrieving records and conservative conditional analysis; weak for exact missed-event detection or full historical reconstruction. | Unknown results are part of the product contract. |
-| Maintenance burden | Moderate even without servers: cron semantics, DST, API caps, retention, reruns and user expectations. | Restrict the first release to one stable UTC schedule and a small module set. |
-| Genuine adoption potential | Plausible niche among maintainers preparing incident/support evidence; ordinary UI, `gh api` scripts and existing products may be sufficient. | Require independent use and repeat value before expanding. |
-| Student suitability | Good as a 10–16-hour offline milestone; viable as a narrow CLI over a term; poor as a hosted service or multi-platform framework. | Avoid on-call commitments and keep a clear stop option. |
+The next work after review should be **one unfamiliar maintainer reproducing a report for a real, bounded stable interval and explaining whether it improved an investigation**. This is a product-validation task, not permission to send outreach. If evidence remains unhelpful or users chiefly want alerts/execution guarantees, prefer contributing these fixtures/uncertainty rules to an existing tool rather than broadening CronTrace.
 
-## Single next implementation milestone
-
-Implement **the offline opportunity/run reconciler**, accepting already-enumerated UTC opportunities and normalized synthetic records. It must distinguish isolated matches, ambiguous candidates, pending windows, no observed record and insufficient evidence, deduplicate reruns, and produce deterministic JSON. It must pass the adversarial cases in [M1](ROADMAP.md#m1--first-and-only-recommended-implementation-task-now) without network access or tokens. The ready-to-file task is [D03](issues/03-offline-reconciler.md).
-
-Do not implement the collector, CLI packaging, dashboard or complete MVP in that milestone. The reconciler can independently falsify the most important promise: that the report avoids misleading certainty and remains useful.
-
-If that promise or the demand gate fails, prefer a contribution: add correct event filtering and uncertainty treatment to Cronkeeper, explore a historical adapter with Schedule Lens, or contribute measurement fixtures to cron-drift. No project has been contacted and no upstream commitment is claimed.
-
-## Prepared repository status
-
-This repository contains documentation and draft issues only. No packages were published, services deployed, paid resources provisioned, or GitHub issues opened. No research outreach was performed. There are no production claims, fake badges, fabricated users, metrics, benchmarks or fabricated commit history. The GitHub repository is [WheelOfBalls/CronTrace](https://github.com/WheelOfBalls/CronTrace); package-name availability and trademark clearance have not been established.
+Implementation is on a feature branch; the source package is release-prepared but unpublished. Owner review, actual CI results and explicit merge/publication approval remain required. See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md), [REVIEW.md](REVIEW.md) and [RELEASE.md](RELEASE.md).

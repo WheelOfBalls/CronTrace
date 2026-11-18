@@ -165,3 +165,17 @@ test('bare secondary limits and long cooldowns stop all later collection request
   assert.equal(stopped.collection.requests, 6);
   assert.equal(stopped.collection.coverage.length, 0);
 });
+
+test('secondary limits do not use unrelated primary reset headers or probe forbidden partitions', async () => {
+  for (const response of [json({}, 429, { 'x-ratelimit-remaining': '200', 'x-ratelimit-reset': String((base + 10_000) / 1000) }), json({}, 403)]) {
+    const f = fixture((_url, i) => i === 0 ? json({ total_count: 1000, workflow_runs: [] }) : response.clone());
+    const bundle = await collectEvidence(options, f.deps);
+    assert.equal(bundle.collection.requests, 6);
+    assert.equal(bundle.collection.coverage.length, 0);
+  }
+});
+
+test('API calendar normalization cannot turn an impossible timestamp into evidence', async () => {
+  const f = fixture(() => json({ total_count: 1, workflow_runs: [run(1, { created_at: '2026-02-30T00:00:00Z' })] }));
+  assert.equal((await collectEvidence(options, f.deps)).collection.coverage.length, 0);
+});

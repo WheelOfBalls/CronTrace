@@ -1,39 +1,50 @@
 # Implementation status
 
-Updated: 2026-11-17. Resumable engineering record; no background work is implied.
+Updated: 2026-11-18. Resumable engineering record; no background work is implied.
 
-## Objective
+## Overarching objective
 
-Deliver a focused, working open-source CLI for read-only GitHub evidence collection, conservative historical schedule audits, offline replay and reproducible reports. Complete release preparation on a feature branch and open a reviewable PR. Do not publish a package or merge without owner approval. The full-product instruction supersedes earlier M1-only scope.
+Deliver the full focused CronTrace CLI: read-only GitHub collection, conservative schedule analysis, offline evidence replay, reproducible reports, tests/reviews/documentation and release preparation. Preserve explicit uncertainty. Work on a feature branch and open a final PR; do not merge or publish without owner approval. The owner's full-product instruction superseded M1-only scope.
 
-## Completed and verified
+## Completed functionality
 
-- Planning history retained from `docs/initial-research-and-architecture` (54387a5); isolated branch `feat/crontrace-cli`.
-- M1 reconciler committed at be788e4: conservative candidate components, rerun normalization, boundary context, evidence assertions, deterministic classifications and adversarial tests.
-- Single-entry UTC schedule extraction/enumeration; explicit unsupported forms.
-- Schema-v1 checksummed evidence, policy validation, bounded private/exclusive file I/O.
-- Bounded GitHub.com GET collector, pagination/partitioning, two-pass stability check, partial coverage, attempt-one recovery and safe authentication.
-- Pure offline audit, text/canonical JSON reports, conditional lag summaries and coverage.
-- CLI collect/audit/policy/help/version, input validation, exit codes and false-default assertion templates.
-- Latest module run: 102/102 tests and TypeScript passed. ESLint and production compilation passed separately. Installed-package E2E verification is in progress.
-- Independent core and integrated reviews found and prompted fixes for conflicting original-start observations, false completeness with insufficient assertions, text output expansion, escaped credential leakage, and collection-wide rate-limit stopping. Regression tests added.
+- Planning history preserved from `docs/initial-research-and-architecture` (54387a5); implementation on `feat/crontrace-cli`.
+- M1 core committed at be788e4; integrated product at ebb691a; subsequent review fixes/documentation are recorded in later commits.
+- Validated internal contracts, run/rerun normalization, conservative candidate components, boundary context, conditional timing and unknown/pending/ambiguous/gap outcomes.
+- Single five-field UTC schedule adapter with conformance/resource tests and explicit unsupported cases.
+- Schema-v1 checksummed JSON evidence and separate false-default historical policy templates, strict bounded file validation/private exclusive output.
+- Fixed-host GET collector with pinned YAML, event filtering, pagination/second partitioning, two-pass stability checks, partial coverage, bounded retries/rate stops and original-attempt recovery.
+- Offline audit orchestration, active-horizon context selection, text/canonical JSON, qualified lag/coverage/outcome summaries.
+- Working collect/audit/policy/help/version CLI, explicit errors/exit codes and installed-package tests.
+- README/CLI/methodology/architecture/troubleshooting, MIT license, contribution/security/conduct guidance, review record, roadmap/remaining drafts, changelog, release checklist and pinned read-only CI configuration.
 
-## Decisions
+## Verified results
 
-Node 24, TypeScript ESM, built-in test runner/fetch/crypto, pinned yaml and cron-parser adapters. Single JSON bundle, not a directory/archive. Current pinned YAML is an explicitly conditional historical definition; the collector cannot establish historical retention, enablement or default-branch history. Policies start with all flags false. A finite attribution horizon never proves a missed event. Reject unsupported zones/multiple cron entries. No telemetry or service.
+Linux, Node 24.22.1, npm 11.9.0; `npm run verify` passed on 2026-11-18:
 
-## Remaining work
+- TypeScript, ESLint, production build: pass.
+- Unit/integration: **105 passed, 0 failed, 0 skipped**.
+- Installed local tarball E2E: **5 passed, 0 failed, 0 skipped**.
+- npm ci, npm pack dry-run, package contents and documented synthetic examples: checked. Package publication did not occur.
+- Runtime npm audit: **0 vulnerabilities**. Full audit: **9 high-severity development-chain entries from one unpatched picomatch advisory**, GHSA-fc5q-39xc-vjpf. Current registry latest is affected; documented in SECURITY.md/D15. The supported toolchain was retained instead of an unsupported downgrade.
+- Read-only live public collection succeeded (6 GETs, one run in selected context) on lowlysre/cron-drift. Selected run independently cross-checked through GitHub connector. Two offline JSON replays matched exactly and exited 3 with unknowns, appropriately without historical assertions. No live private-repository verification.
+- Independent review passes and fixes documented in [REVIEW.md](REVIEW.md). Material fixes cover assertion completeness, conflicting start observations, output expansion, escaped-token handling, secondary cooldowns, narrowed-context replay, output-pipe failure and ignored private output names.
 
-1. Finish installation/E2E verification and fix any failures.
-2. Rewrite planning-era user docs to actual behavior; CI, security/contribution guidance and release checklist.
-3. Bounded public-data smoke collection and deterministic replay, if GitHub access permits.
-4. Final independent security/usability review; fix material findings and rerun full verification.
-5. Commit, push feature branch, open final PR against main. Keep publication/merge manual.
+## Decisions and rationale
 
-## Known limits
+Use Node 24/TypeScript ESM, built-in test/fetch/crypto and pinned YAML/cron adapters. Store one small JSON contract instead of a multi-file archive. Keep historical assertions separate: current metadata cannot establish prior schedule/enablement/default-branch/retention facts. Never force nearest-slot assignment or count reruns twice. Fail explicitly on limits; do not silently sample. Keep `private: true` to prevent accidental publication.
 
-Named zones/DST and multiple schedules are rejected. Historical epochs are not reconstructed. Retention/deletion and extreme delays remain uncertain. High-frequency schedules can be mostly ambiguous/unknown. Two traversals do not create an atomic historical snapshot. Checksums are integrity checks, not signatures. Filesystem protections do not eliminate parent-directory replacement races; use a trusted local directory. No live private-repository validation or external user/adoption validation yet.
+## Limitations / unfinished validation
 
-## Precise next action
+Named zones/DST, multiple cron entries, historical epochs and Enterprise hosts are unsupported. H is a conditional bound, not a maximum GitHub delay. High-frequency schedules may be mostly ambiguous/unknown. API traversal does not prove retained history; checksums do not authenticate provenance. Trusted local directories are required (parent replacement races remain). Linux is the only verified platform. Development-only dependency advisory remains open. External demand, independent user walkthroughs and adoption are unvalidated; no claims fabricated.
 
-Read `/workspace/work/product-verify.log` for the running verification result, then complete public documentation/CI and a read-only live smoke test. Run `npm run verify`, `npm audit`, independent final reviews, preserve changes with commits and open the PR. Update this file at the next milestone and before ending.
+The technical hypothesis survived **for conservative conditional analysis and reproducible evidence**, not exact missed-event detection. Product-market usefulness remains unproven. Scope expansion is optional and gated by actual need.
+
+## Remaining actions and precise resume point
+
+1. Commit/push the reviewed changes to `feat/crontrace-cli` and open the final PR against main, preserving planning history.
+2. Inspect the remote CI result, fix material failures if any, and record the PR/result here. Do not claim CI ran until observed.
+3. Owner review and explicit merge/publication decisions remain. Recheck D15 before release and follow [RELEASE.md](RELEASE.md).
+4. After review, prioritize one authorized unfamiliar-developer incident walkthrough; no outreach has been sent.
+
+Resume at step 1 if the session ends before PR creation. All implementation and local verification are preserved in the worktree `/workspace/work/crontrace-m1`; logs/live evidence are outside the repo under `/workspace/work/`. No package, tag, service or release was published.

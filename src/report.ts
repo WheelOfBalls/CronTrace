@@ -32,7 +32,7 @@ export function formatReport(report: AuditReport): string {
     `Assertions: ${report.policy ? safe(report.policy.assertions.note) : 'unknown'}`,
     '', 'Coverage and outcomes',
     `API traversal: ${s.coverage.apiTraversalMs}/${s.coverage.requestedContextMs} milliseconds of requested context (not retention completeness)`,
-    `Target opportunities: ${s.targetOpportunities}; recorded scheduled runs including context: ${s.recordedScheduledRunsInEvidence}`,
+    `Target opportunities: ${s.targetOpportunities}; recorded scheduled runs including context: ${s.recordedScheduledRunsInContext}`,
     `Within tolerance: ${s.counts.matched_on_time}; late: ${s.counts.matched_late}; potential gaps: ${s.counts.no_observed_run}`,
     `Ambiguous: ${s.counts.ambiguous}; pending: ${s.counts.pending}; unknown: ${s.counts.unknown}; excluded: ${s.counts.excluded}`,
     `Runs with rerun evidence: ${s.runsWithReruns}`,

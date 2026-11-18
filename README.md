@@ -1,61 +1,90 @@
 # CronTrace
 
-**Planning stage. No executable, package, GitHub Action, or working MVP exists yet.**
+An evidence-first CLI for historical audits of scheduled GitHub Actions workflows. Collect read-only API records once, save them locally, and reproduce an audit offline.
 
-CronTrace is a proposed open-source, read-only CLI for inspecting the recorded history of scheduled GitHub Actions workflows. It would compare declared execution opportunities with available run records and produce a local, reproducible evidence report.
+**Status: implemented initial release candidate, version 0.1.0; not published to npm.** The supported subset is deliberately small. Tests cover adversarial synthetic timelines and the installed CLI; external adoption and product demand remain unvalidated. See [implementation status](docs/IMPLEMENTATION_STATUS.md) for current verification and release blockers.
 
-The product hypothesis is unvalidated. The name is provisional. This repository contains research, a proposed design, and issue drafts—not completed features.
+CronTrace associates recorded runs with expected opportunities conservatively. It reports late associations, possible gaps, ambiguity, incomplete evidence and execution outcomes. **It cannot prove GitHub dropped an event.** Current APIs do not identify each run's original intended schedule instant or establish complete historical eligibility.
 
-## Why consider it?
+## Install from source
 
-Developers report delayed and apparently absent scheduled runs. Several tools already monitor this problem. CronTrace is worth testing only if maintainers value a portable report that preserves its inputs, states its assumptions, and explains uncertain matches without requiring a hosted account or changes to monitored workflows.
+Requires Node.js **24.x** and npm. Linux is the verified platform; other platforms are not yet certified.
 
-**A missing API record cannot prove that GitHub dropped a scheduled event.** A report would distinguish recorded runs, conditional timing estimates, unresolved matches, and unavailable history. It would neither repair scheduling nor guarantee delivery. Time-sensitive workloads may need a different scheduler regardless of what an audit shows.
-
-## Proposed first useful scope
-
-- One repository and one explicitly selected workflow per invocation.
-- One stable UTC schedule over a user-reviewed interval; unsupported schedules reported explicitly.
-- Read-only collection of run metadata and a pinned workflow definition.
-- Offline replay from a versioned evidence bundle.
-- JSON and plain-text reports with source links, coverage caveats, and separate execution outcomes.
-
-These are proposals. Named time zones, multiple cron entries, automatic historical reconstruction, HTML dashboards, notifications, and organization-wide scans are outside the first release.
-
-## Proposed usage—not available commands
-
-```text
-crontrace collect OWNER/REPO --workflow WORKFLOW_ID \
-  --from 2026-10-01T00:00:00Z --to 2026-10-08T00:00:00Z \
-  --out ./evidence/october
-
-crontrace audit ./evidence/october --policy ./audit-policy.json \
-  --format text --out ./reports/october.txt
+```sh
+git clone https://github.com/WheelOfBalls/CronTrace.git
+cd CronTrace
+# Until the implementation PR is merged:
+git switch feat/crontrace-cli
+npm ci
+npm run verify
+npm pack
+npm install --global ./crontrace-0.1.0.tgz
+crontrace --help
 ```
 
-The policy would record schedule validity and history assumptions. Collection alone would not establish that the current schedule applied throughout the past. See the [proposed CLI and report contract](docs/PRODUCT_SPEC.md).
+If global installation is unavailable, use `node dist/bin.js` in place of `crontrace` after `npm run build`. No hosted service, database or account registration is required. Package publication and merge remain subject to owner review.
 
-There is no installation command yet. Do not install a similarly named package assuming it belongs to this project.
+## Try a reproducible offline example
 
-## Review the direction
+```sh
+crontrace audit examples/synthetic-evidence.json \
+  --policy examples/synthetic-policy.json --late-after 10m
+crontrace audit examples/synthetic-evidence.json \
+  --policy examples/synthetic-policy.json --late-after 10m --format json
+```
 
-1. [Research, competitors, and evidence of demand](docs/RESEARCH.md)
-2. [Product specification](docs/PRODUCT_SPEC.md)
-3. [Architecture and inference rules](docs/ARCHITECTURE.md)
-4. [Roadmap and go/no-go gates](docs/ROADMAP.md)
-5. [Eight draft issues](docs/issues/README.md)
-6. [Decision memo](docs/DECISION.md)
+These are clearly labeled **synthetic** records, not a real repository or scheduler benchmark. Three hourly opportunities yield one within-tolerance association, one late association (whose execution failed), and one potential gap under the fixture's explicit 50-minute horizon and history assertions. The full expected text is [committed alongside the evidence](examples/synthetic-report.txt). Replaying unchanged inputs with the same version is deterministic.
 
-**Recommendation:** proceed only with the small offline matching milestone in the roadmap. Validate usefulness before building the collector and full MVP. If users primarily want alerts or calendar views, use or contribute to existing tools instead.
+## Audit your workflow
 
-## Permissions and privacy
+Choose a past interval where the schedule and eligibility history can be reviewed:
 
-The planned collector would use GitHub REST GET requests only. Public metadata may be read without authentication. Private-repository collection would require a repository-scoped token with Actions: read and Contents: read. Contents permission grants access beyond workflow files; the proposed implementation would voluntarily restrict what it fetches. No write permissions, monitoring pings, telemetry, or uploaded reports are planned.
+```sh
+crontrace collect OWNER/REPO --workflow daily.yml \
+  --from 2026-11-01T00:00:00Z --to 2026-11-03T00:00:00Z \
+  --out evidence.json
+crontrace audit evidence.json
+crontrace policy evidence.json --out policy.json
+```
 
-Evidence bundles may contain private repository names, paths, commit IDs, and run URLs. Keep them private by default. See [security boundaries](docs/ARCHITECTURE.md#security-boundaries).
+The first audit normally exits **3**: historical facts are unverified. The policy command creates a readable template with **all assertions false**. Review the definition, enablement/default-branch history, retention and deletion evidence for its full time interval. Record your basis in `note`; enable only assertions you can justify. Do not toggle flags just to obtain a clean result. False flags mean unknown, not “the workflow was disabled.”
 
-## Contributing and license
+```sh
+crontrace audit evidence.json --policy policy.json --format json --out report.json
+crontrace audit evidence.json --policy policy.json --fail-on gap
+```
 
-At this stage, useful contributions are research corrections, adversarial examples, and feedback from actual workflow maintainers. Please read [CONTRIBUTING.md](CONTRIBUTING.md).
+Authentication is optional for public repositories. For private repositories, provide a fine-grained token through `GH_TOKEN` or `GITHUB_TOKEN` with **Actions: read** and **Contents: read** for the selected repository (metadata read is implicit). Prefer a secret manager or CI secret; never put a token in arguments or checked-in files. The collector only sends GET requests to `api.github.com` and rejects redirects. See [security guidance](SECURITY.md).
 
-[MIT](LICENSE) is the recommended license; the [rationale](docs/LICENSE_CHOICE.md) explains the tradeoffs. No adoption, performance, or production-readiness claims are made.
+## What works
+
+- One five-field cron schedule in UTC, with names, ranges, lists and steps in the documented subset.
+- Read-only GitHub.com collection: pinned workflow definition, filtered run history, pagination, bounded partitioning/retries and explicit partial coverage.
+- Versioned, validated, checksummed evidence and separate historical assertions; offline text and canonical JSON reports.
+- Rerun deduplication; original-attempt timing when available; manual dispatch filtering; failed/cancelled runs counted as recorded executions.
+- Conservative candidate components: ambiguous delayed executions and competing records stay unresolved.
+- Qualified creation-lag statistics, API traversal coverage and separate execution outcomes. No invented scheduler reliability percentage.
+- `collect`, `audit`, `policy`, help/version, exclusive output files and CI-friendly exit codes.
+
+| Exit | Meaning |
+| --- | --- |
+| 0 | Requested operation completed under stated assumptions; findings may exist unless a threshold was selected |
+| 1 | Selected `--fail-on` finding exists |
+| 2 | Invalid input or operation failed |
+| 3 | Incomplete collection/evidence or unsupported schedule semantics; takes precedence over 1 |
+
+## Limits that matter
+
+GitHub supports named time zones, but **this release rejects them**, including DST schedules. Multiple schedule entries are also unsupported. Historical schedule changes, default-branch changes and disabled periods are not reconstructed. Split an audit into intervals with defensible assertions, or retain unknown results.
+
+A finite attribution horizon is a user assumption, not GitHub's maximum delay. Widening it can introduce ambiguity; narrowing it can conceal plausible late arrivals. High-frequency schedules may remain largely ambiguous or unknown. A checksummed bundle detects edits but does not authenticate its author. API traversal coverage does not prove retained history is complete. Local evidence contains workflow source and may be sensitive.
+
+Intervals are limited to 90 days; collection to 200 requests and roughly 60 seconds of request work. Named zones, multi-schedule attribution, Enterprise hosts, dashboards, monitoring, automatic retries of workflows and notifications are outside this release. See [methodology](docs/METHODOLOGY.md), [CLI reference](docs/CLI.md) and [troubleshooting](docs/TROUBLESHOOTING.md).
+
+## Why a separate tool?
+
+Cronkeeper audits recent runs; cron-drift measures scheduling delays; Cronwake and Healthchecks support monitoring; Schedule Lens explains schedule configuration. Direct API scripts are often enough. CronTrace's narrow contribution is a reusable local evidence format, explicit historical assumptions, conservative ambiguity, and reproducible offline reports. Competitors overlap substantially; [the sourced assessment](docs/RESEARCH.md) and [decision](docs/DECISION.md) explain why usefulness remains a hypothesis, not an adoption claim.
+
+## Contribute
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md), [architecture](docs/ARCHITECTURE.md), [roadmap](docs/ROADMAP.md), and [remaining issue drafts](docs/issues/README.md). Correctness and false-certainty bugs take priority over new features. MIT licensed; [license rationale](docs/LICENSE_CHOICE.md). Participation follows the [code of conduct](CODE_OF_CONDUCT.md).

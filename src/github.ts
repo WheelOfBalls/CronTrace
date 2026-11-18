@@ -41,7 +41,7 @@ function safeText(value: unknown, max = 256): string {
 function timestamp(value: unknown): number {
   if (typeof value !== 'string' || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/.test(value)) return fail();
   const result = Date.parse(value);
-  if (!Number.isSafeInteger(result) || result < 0) return fail();
+  if (!Number.isSafeInteger(result) || result < 0 || new Date(result).toISOString().slice(0, 19) !== value.slice(0, 19)) return fail();
   return result;
 }
 function workflowPath(value: unknown): string {
@@ -71,8 +71,16 @@ async function bodyJson(response: Response, token: string | undefined): Promise<
   if (token && text.includes(token)) return fail('credential_in_response');
   let parsed: unknown;
   try { parsed = JSON.parse(text) as unknown; } catch { return fail(); }
-  // Parse/re-encode to catch credentials hidden behind JSON Unicode escapes too.
-  if (token && JSON.stringify(parsed).includes(token)) return fail('credential_in_response');
+  // Inspect decoded strings (including keys) so escapes cannot conceal credentials.
+  const pending: unknown[] = token ? [parsed] : [];
+  while (pending.length) {
+    const value = pending.pop();
+    if (typeof value === 'string' && value.includes(token!)) return fail('credential_in_response');
+    if (Array.isArray(value)) { for (const child of value) pending.push(child); }
+    else if (value !== null && typeof value === 'object') {
+      for (const [key, child] of Object.entries(value)) pending.push(key, child);
+    }
+  }
   return parsed;
 }
 
@@ -132,13 +140,16 @@ export async function collectEvidence(options: CollectOptions, deps: CollectDepe
               if (retryAfter !== null) {
                 const seconds = /^\d+(?:\.\d+)?$/.test(retryAfter) ? Number(retryAfter) * 1000 : Date.parse(retryAfter) - now();
                 retryDelay = Number.isFinite(seconds) ? Math.max(retryDelay, seconds) : Infinity;
-              } else if (rateLimited && reset !== null) {
+              }
+              if (rateLimited && reset !== null && response.headers.get('x-ratelimit-remaining') === '0') {
                 const resetDelay = Number(reset) * 1000 - now();
                 retryDelay = Number.isFinite(resetDelay) ? Math.max(retryDelay, resetDelay) : Infinity;
-              } else if (rateLimited) retryDelay = Infinity;
+              } else if (rateLimited && retryAfter === null) retryDelay = Infinity;
               if (rateLimited && (attempt === 2 || retryDelay > 2000 || sleptMs + retryDelay > 5000)) stoppedForRateLimit = true;
               return fail(rateLimited ? 'rate_limited' : 'server_error');
             }
+            // A bare 403 may also be a secondary limit; stop instead of probing siblings.
+            if (response.status === 403) stoppedForRateLimit = true;
             return fail(response.status === 401 ? 'authentication_failed' : response.status === 403 ? 'access_denied' : response.status === 404 ? 'not_found_or_denied' : 'http_error');
           }
           const value = await bodyJson(response, options.token);
@@ -151,7 +162,10 @@ export async function collectEvidence(options: CollectOptions, deps: CollectDepe
         const code = safeCode(error);
         if (code === 'request_failed' || code === 'request_timeout') retryDelay = 250 * 2 ** attempt;
         const delay = retryDelay as number | null;
-        if (attempt === 2 || delay === null || delay > 2000 || sleptMs + delay > 5000 || performance.now() + delay >= deadline) throw new CollectionError(code);
+        if (attempt === 2 || delay === null || delay > 2000 || sleptMs + delay > 5000 || performance.now() + delay >= deadline) {
+          if (code === 'rate_limited') stoppedForRateLimit = true;
+          throw new CollectionError(code);
+        }
         sleptMs += delay;
         await sleep(delay);
       } finally { if (timer) clearTimeout(timer); controller.abort(); }

@@ -136,3 +136,11 @@ All accessed/reviewed 2026-11-16. Mutable documentation and default-branch links
 - **D3:** [Community #207370](https://github.com/orgs/community/discussions/207370)
 - **D4:** [Community #208916](https://github.com/orgs/community/discussions/208916)
 - **D5:** [Community #210401](https://github.com/orgs/community/discussions/210401)
+
+## Implementation follow-up — 2026-11-17
+
+The functional 0.1.0 candidate now implements the narrow local-audit hypothesis. This is engineering progress, **not new evidence of demand**. No competitor was contacted, no user study was conducted and no adoption claim follows from passing tests.
+
+Against Cronkeeper, the concrete difference is versioned saved evidence, separate historical assertions, conservative multi-candidate analysis and offline replay rather than a recent-run check. Against cron-drift, it is retrospective analysis of existing run records rather than an instrumented measurement dashboard. Against Cronwake and Healthchecks, it is a local inspectable audit rather than ongoing hosted/heartbeat monitoring. Against Schedule Lens, it analyzes recorded execution evidence rather than only static schedule configuration. A direct API script remains a sensible alternative; CronTrace packages the edge-case handling and repeatable report contract. These distinctions are modest and do not establish exclusive features or a technical moat; source-specific qualifications above still apply.
+
+The official [schedule documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule), [workflow run API](https://docs.github.com/en/rest/actions/workflow-runs#list-workflow-runs-for-a-workflow), and [rate-limit rules](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api) were rechecked during implementation. Named zones exist upstream but remain unsupported here; filtered searches require cap-aware partitioning; secondary-limit cooldowns must stop requests when they exceed the local budget. See the implemented [methodology](METHODOLOGY.md) and [review record](REVIEW.md) for tested behavior and residual limits.
